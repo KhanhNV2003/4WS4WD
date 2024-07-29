@@ -6,5 +6,12 @@ y0 = 10;
 psi0 = 0;
 
 Robot = Model4WS4WD(l, d, x0, y0, psi0);
-Robot.UpdatePosition(1, 0, 1, 0, 1, 0, 1, 0);
+% Robot.UpdatePosition(1, 0, 1, 0, 1, 0, 1, 0);
 
+for i = 1:90000
+    Robot.UpdatePosition(Robot.Controller);
+end
+
+Robot.x
+Robot.y
+Robot.psi

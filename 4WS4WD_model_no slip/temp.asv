@@ -5,27 +5,13 @@ x0 = 0;
 y0 = 10;
 psi0 = 0;
 
-W = [1, 0, -l;
-        0, 1, d;
-        1, 0, -l;
-        0, 1, -d;
-        1, 0, l;
-        0, 1, -d;
-        1, 0, l;
-        0, 1, d]; % assign matrix W
-% pinv(W)*W
 Robot = Model4WS4WD(l, d, x0, y0, psi0);
-Robot.UpdatePosition(1, 0, 1, 0, 1, 0, 1, 0);
+% Robot.UpdatePosition(1, 0, 1, 0, 1, 0, 1, 0);
 
-eta = [x0; y0; psi0];
-V = [1, 0, 1, 0, 1, 0, 1, 0];
-[t, y] = ode45(@odefcn, [0, 1e-3], eta);
-
-
-function detadt = odefcn(eta, V)
-    x = eta(1); y = eta(2); psi = eta(3);
-    R = [cos(psi), -sin(psi), 0;
-            sin(psi), cos(psi), 0;
-            0, 0, 1]; 
-    detadt = (R*pinv(W)*V);
+for i = 1:100000
+    Robot.UpdatePosition(Robot.Controller);
 end
+
+Robot.x
+Robot.y
+Robot.psi

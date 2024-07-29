@@ -12,6 +12,9 @@ classdef Model4WS4WD <handle
         d % body width (distance from the centre of the robot to the wheel along Y-axis)
         W % W robot coefficient matrix 
         dt % sampling time
+        v1x % mearsurable variable
+        v1y % measurable variable
+        v2y % measurable variable
     end
     
     methods
@@ -32,11 +35,22 @@ classdef Model4WS4WD <handle
                     0, 1, -d;
                     1, 0, l;
                     0, 1, d]; % assign matrix W
+            oj.v1x = 0;
+            oj.v1y = 0;
+            oj.v2y = 0;
 
         end
         
-        function oj = UpdatePosition(oj, v1, phi1, v2, phi2, v3, phi3, v4, phi4)
+        function oj = UpdatePosition(oj, input)
             % This function update 
+            v1 = input(1);
+            phi1 = input(2);
+            v2 = input(3);
+            phi2 = input(4);
+            v3 = input(5);
+            phi3 = input(6);
+            v4 = input(7);
+            phi4 = input(8);
             %   Detailed explanation goes here
             v1x = v1*cos(phi1); % velocity of wheel 1 along XBYB-axis
             v1y = v1*sin(phi1); % velocity of wheel 1 along YB-axis
@@ -57,13 +71,57 @@ classdef Model4WS4WD <handle
             etaNext = eta + oj.dt/6*(k1 + 2*k2 + 2*k3 + k4); % Calculate next position
             
             function detadt = odefcn(eta, V)
-                x = eta(1); y = eta(2); psi = eta(3);
-                R = [cos(psi), -sin(psi), 0;
-                        sin(psi), cos(psi), 0;
+                xCur = eta(1); yCur = eta(2); psiCur = eta(3);
+                R = [cos(psiCur), -sin(psiCur), 0;
+                        sin(psiCur), cos(psiCur), 0;
                         0, 0, 1]; 
                 detadt = (R*pinv(oj.W)*V);
             end
             oj.x = etaNext(1); oj.y = etaNext(2); oj.psi = etaNext(3);
+            oj.v1x = v1x;
+            oj.v1y = v1y;
+            oj.v2y = v2y;
+        end
+
+        function out = Controller(oj)
+
+            vc = 2;
+            b = 3;
+
+            % Control parameter
+            ku = 1;
+            beta = 2;
+
+            % Calculate desired steering angle
+            psid = -atan2(oj.y, b);
+            dpsid = b^2/(b*(b^2 + oj.y^2))*vc*sin(psid);
+
+            %  Calculate system variables
+            phi1 = atan2(oj.v1y, oj.v1x);
+            dpsi = vc/(oj.d*sin(phi1) + oj.l*cos(phi1));
+            v2 = sqrt(oj.v1x^2 + oj.v2y^2);
+            phi2 = atan2(sqrt(v2^2 - oj.v1x^2), oj.v1y);
+            phi3 = atan2(oj.v2y, (oj.v1x + (oj.v1y - oj.v2y)*oj.l/oj.d));
+            phi4 = atan2(oj.v1y, (oj.v1x + (oj.v1y - oj.v2y)*oj.l/oj.d));
+
+            % Calculate control law for wheel 1
+            phi1d = .5*atan(beta*(psid - oj.psi));
+            dphi1d = .5/(1 + (beta*(psid - oj.psi))^2 )*beta*(dpsid - dpsi);
+            u1 = ku*(phi1d - phi1) + dphi1d;
+
+            % Calculate control law for wheel 2, 3, 4
+            phi2d = phi1d;
+            phi3d = phi1d;
+            phi4d = phi1d;
+
+            dphi2d = dphi1d;
+            dphi3d = dphi1d;
+            dphi4d = dphi1d;
+
+            u2 = ku*(phi2d - phi2) + dphi2d;
+            u3 = ku*(phi3d - phi3) + dphi3d;
+            u4 = ku*(phi4d - phi4) + dphi4d;
+            out = [vc, u1, vc, u2, vc, u3, vc, u4];
         end
 
         

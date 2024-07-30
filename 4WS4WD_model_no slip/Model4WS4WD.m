@@ -86,7 +86,7 @@ classdef Model4WS4WD <handle
         function out = Controller(oj)
 
             vc = 2;
-            b = 3;
+            b = 10;
 
             % Control parameter
             ku = 1;
@@ -121,6 +121,13 @@ classdef Model4WS4WD <handle
             u2 = ku*(phi2d - phi2) + dphi2d;
             u3 = ku*(phi3d - phi3) + dphi3d;
             u4 = ku*(phi4d - phi4) + dphi4d;
+
+            % Constraint for maximum angle
+            u1 = min(max(u1, -pi/4), pi/4);
+            u2 = min(max(u2, -pi/4), pi/4);
+            u3 = min(max(u3, -pi/4), pi/4);
+            u4 = min(max(u4, -pi/4), pi/4);
+
             out = [vc, u1, vc, u2, vc, u3, vc, u4];
         end
 
